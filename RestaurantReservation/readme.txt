@@ -1,8 +1,3 @@
-Yara Tarek Fathy Hamed Mohamed      ID:6445
-Nour Mohamed Gaber Mohamed ElSayed  ID:6392
-
-
-
 When the program first starts a login screen will appear for the user to enter his username and password, if he entered wrong credentials an error message will appear warning him and he will be given the chance to enter his username and password again.
 If he entered a correct username and password a screen will appear based on the user's role.
 The project contains 2 xml files:
@@ -22,16 +17,3 @@ If the user enters the username and password for the cooker, the user will be ab
 
 
 Note:Please find attached jfree library added for the pie charts included.
-
-
-
-Division of labor:
-We both worked on the classes that load from the file (the files in the xml package) and we both worked on the classes of inheritance from the User (in the Major package).
-For the screens:
-The Client and Cooker screens were implemented by Yara and the Manager and Waiter screens were implemented by Nour.
-Note : Please add a copy of Orders.xml inside the dist folder to run the jar.
-
-
-  
-
-
