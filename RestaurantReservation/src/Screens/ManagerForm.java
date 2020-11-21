@@ -1,0 +1,676 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package Screens;
+
+import Major.Cooker;
+import Major.Manager;
+import Major.User;
+import Major.Waiter;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartFrame;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.labels.PieSectionLabelGenerator;
+import org.jfree.chart.labels.StandardPieSectionLabelGenerator;
+import org.jfree.chart.plot.PiePlot;
+import org.jfree.data.general.DefaultPieDataset;
+import org.jfree.data.general.PieDataset;
+import xml.Dishes;
+import xml.Dish;
+import xml.Order;
+import xml.Orders;
+import xml.Reservations;
+import xml.Restaurant;
+import xml.Table;
+import xml.UserLoad;
+import xml.TopOrderedDish;
+
+/**
+ *
+ * @author Sony
+ */
+public class ManagerForm extends javax.swing.JFrame {
+
+    /**
+     * Creates new form managerForm
+     */
+    int flag = 0;
+    List <Table> allTables = new ArrayList<>();
+    List <Table> reservedTables = new ArrayList<>();
+    List <Table> availableTables = new ArrayList<>();
+    List <Order> ordersList = new ArrayList<>();
+    List <Waiter> waitersList = new ArrayList<>();
+    List <Cooker> cookersList = new ArrayList<>();
+    List <Dish> dishes = new ArrayList<>();
+    List<TopOrderedDish> topOrderedDishList = new ArrayList<>();
+    int availableTablesCount = 0;
+    int reservedTablesCount = 0;
+    int smokingTables =0;
+    int nonsmokingTables =0;
+    int appetizerDishes = 0;
+    int mainCourseDishes = 0;
+    int dessertDishes = 0;
+    double totalEarned = 0;
+    double totalEarnedTax = 0;
+    StringBuilder str = new StringBuilder();
+    StringBuilder str1 = new StringBuilder();
+    StringBuilder availableStr = new StringBuilder();
+    StringBuilder reservedStr = new StringBuilder();
+    StringBuilder ordersStr = new StringBuilder();
+    
+    Restaurant restaurant;
+    int count=0;
+    
+    public ManagerForm() {
+        initComponents();
+           
+    }
+ public  ManagerForm( List <Waiter> waiters,  List <Cooker> cookers ) throws JAXBException{
+     initComponents();
+     
+     readXMLtables();
+     readXMLorders();
+     getTablesDetails();
+    if (flag ==0){
+     calculateTotalEarned(ordersList);
+     jTextField1.setText(String.valueOf(totalEarned));
+     
+     jTextField3.setText(String.valueOf(totalEarnedTax));}
+     waitersList = waiters;
+     cookersList = cookers;
+ }
+ 
+ private void readXMLtables() throws JAXBException{
+        JAXBContext jaxbcontext = JAXBContext.newInstance(Restaurant.class);
+        Unmarshaller u=jaxbcontext.createUnmarshaller();
+        restaurant = (Restaurant) u.unmarshal(new File("data.xml"));
+        allTables = restaurant.getTables().getTables(); 
+        
+     
+    }
+ private void getTablesDetails(){
+ 
+    for(Table x: allTables){
+            
+            if(x.isSmoking() == true){smokingTables++;}else{nonsmokingTables++;}
+            
+            if(x.isReserved()== true){
+                Table r = new Table(x.getNumber(),x.getNumber_of_seats(),x.isSmoking(),x.isReserved());
+                reservedTables.add(r);
+                reservedTablesCount++;
+                
+           }else {
+                Table a = new Table(x.getNumber(),x.getNumber_of_seats(),x.isSmoking(),x.isReserved());
+                availableTables.add(a);
+                availableTablesCount++;
+            }
+        }
+        
+     
+   
+ 
+ }
+ 
+ private void readXMLorders() throws JAXBException{
+        JAXBContext jaxbcontext = JAXBContext.newInstance(Reservations.class);
+        Unmarshaller u=jaxbcontext.createUnmarshaller();
+        Reservations Ordersloadd = (Reservations) u.unmarshal(new File("Orders.xml"));
+         if(Ordersloadd.getOrders()==null)
+        {
+            flag = 1;
+        }
+         else{
+         ordersList = Ordersloadd.getOrders().getOrder();
+         }
+    }
+ 
+ private void calculateTotalEarned (List <Order> ordersList)
+ {
+     int p;
+     int q;
+     for(Order x: ordersList){
+       for(int i=0;i<x.getDishes().size();i++)
+            {  
+              p = x.getDishes().get(i).getPrice();
+              q = x.getDishes().get(i).getQuantity();
+              totalEarned = totalEarned + (p * q); 
+            }
+          totalEarnedTax = totalEarnedTax + x.getOrderBill();
+     }
+    
+ }   
+ 
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+     
+ private void getTopOrderedDishesStatistics()   
+ {
+    dishes = restaurant.getDishes().getDishes();
+    for (int i=0;i<dishes.size();i++)
+    {
+        TopOrderedDish t = new TopOrderedDish();
+        t.setDishName(dishes.get(i).getName());
+       topOrderedDishList.add(t);
+        //topOrderedDishList.get(i).setDishName(dishes.get(i).getName());
+        //System.out.println(dishes.get(i).getName());
+    }
+
+    int t=0;
+    for(int j=0;j<ordersList.size();j++){
+    
+        for(int z=0;z<ordersList.get(j).getDishes().size();z++){
+            for(int k=0;k<topOrderedDishList.size();k++){ 
+                if(ordersList.get(j).getDishes().get(z).getName().equals(topOrderedDishList.get(k).getDishName()))
+                {
+                  t = ordersList.get(j).getDishes().get(z).getQuantity();  
+                  topOrderedDishList.get(k).setCount(t+topOrderedDishList.get(k).getCount());
+                }
+            }
+       
+        
+        }
+    }
+    
+   
+         
+    sortTopDishes(topOrderedDishList);
+    
+  
+ }
+    
+ private void sortTopDishes (List <TopOrderedDish> topOrderedDishList){
+ 
+  int pass;
+        TopOrderedDish temp;
+        int i;
+        for (pass = 1; pass < topOrderedDishList.size(); pass++) {
+
+            for (i = 0; i < topOrderedDishList.size() - pass; i++) {
+                if (topOrderedDishList.get(i).getCount() < topOrderedDishList.get(i + 1).getCount()) {
+                    temp = topOrderedDishList.get(i);
+                    topOrderedDishList.set(i, topOrderedDishList.get(i + 1));
+                    topOrderedDishList.set(i + 1, temp);
+                } 
+            }
+        }
+
+ }  
+    
+    
+    
+    
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jScrollPane4 = new javax.swing.JScrollPane();
+        jList1 = new javax.swing.JList<>();
+        jLabel1 = new javax.swing.JLabel();
+        jLayeredPane1 = new javax.swing.JLayeredPane();
+        jButton2 = new javax.swing.JButton();
+        jButton6 = new javax.swing.JButton();
+        jButton7 = new javax.swing.JButton();
+        jLayeredPane2 = new javax.swing.JLayeredPane();
+        jButton4 = new javax.swing.JButton();
+        jButton3 = new javax.swing.JButton();
+        jButton5 = new javax.swing.JButton();
+        jLabel6 = new javax.swing.JLabel();
+        jButton8 = new javax.swing.JButton();
+        jLayeredPane3 = new javax.swing.JLayeredPane();
+        jLabel5 = new javax.swing.JLabel();
+        jTextField1 = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
+        jTextField3 = new javax.swing.JTextField();
+        jLayeredPane4 = new javax.swing.JLayeredPane();
+        jButton1 = new javax.swing.JButton();
+
+        jList1.setModel(new javax.swing.AbstractListModel<String>() {
+            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
+            public int getSize() { return strings.length; }
+            public String getElementAt(int i) { return strings[i]; }
+        });
+        jScrollPane4.setViewportView(jList1);
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        jLabel1.setFont(new java.awt.Font("Segoe Print", 1, 24)); // NOI18N
+        jLabel1.setForeground(new java.awt.Color(0, 51, 204));
+        jLabel1.setText(" Manager");
+
+        jLayeredPane1.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED, new java.awt.Color(153, 153, 255), new java.awt.Color(153, 153, 255), new java.awt.Color(102, 51, 255), null));
+
+        jButton2.setFont(new java.awt.Font("Traditional Arabic", 1, 14)); // NOI18N
+        jButton2.setForeground(new java.awt.Color(51, 0, 204));
+        jButton2.setText("Show Reservations");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+
+        jButton6.setFont(new java.awt.Font("Traditional Arabic", 1, 14)); // NOI18N
+        jButton6.setForeground(new java.awt.Color(0, 0, 204));
+        jButton6.setText("Show Available and Reserved Tables");
+        jButton6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton6ActionPerformed(evt);
+            }
+        });
+
+        jButton7.setFont(new java.awt.Font("Traditional Arabic", 1, 14)); // NOI18N
+        jButton7.setForeground(new java.awt.Color(51, 0, 204));
+        jButton7.setText("Show Waiters and Cookers");
+        jButton7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton7ActionPerformed(evt);
+            }
+        });
+
+        jLayeredPane1.setLayer(jButton2, javax.swing.JLayeredPane.DEFAULT_LAYER);
+        jLayeredPane1.setLayer(jButton6, javax.swing.JLayeredPane.DEFAULT_LAYER);
+        jLayeredPane1.setLayer(jButton7, javax.swing.JLayeredPane.DEFAULT_LAYER);
+
+        javax.swing.GroupLayout jLayeredPane1Layout = new javax.swing.GroupLayout(jLayeredPane1);
+        jLayeredPane1.setLayout(jLayeredPane1Layout);
+        jLayeredPane1Layout.setHorizontalGroup(
+            jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jLayeredPane1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jLayeredPane1Layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(jButton6))
+                    .addGroup(jLayeredPane1Layout.createSequentialGroup()
+                        .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 259, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 259, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addContainerGap())
+        );
+        jLayeredPane1Layout.setVerticalGroup(
+            jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jLayeredPane1Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(33, 33, 33)
+                .addComponent(jButton6)
+                .addGap(27, 27, 27)
+                .addComponent(jButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(37, 37, 37))
+        );
+
+        jLayeredPane2.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED, new java.awt.Color(153, 153, 255), new java.awt.Color(153, 153, 255), new java.awt.Color(102, 102, 255), null));
+
+        jButton4.setFont(new java.awt.Font("Traditional Arabic", 1, 14)); // NOI18N
+        jButton4.setForeground(new java.awt.Color(51, 0, 204));
+        jButton4.setText("Smoking and Non Smoking Tables");
+        jButton4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton4ActionPerformed(evt);
+            }
+        });
+
+        jButton3.setFont(new java.awt.Font("Traditional Arabic", 1, 14)); // NOI18N
+        jButton3.setForeground(new java.awt.Color(51, 0, 204));
+        jButton3.setText("Available and Reserved Tables");
+        jButton3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton3ActionPerformed(evt);
+            }
+        });
+
+        jButton5.setFont(new java.awt.Font("Traditional Arabic", 1, 14)); // NOI18N
+        jButton5.setForeground(new java.awt.Color(51, 0, 204));
+        jButton5.setText("Dish Types ");
+        jButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton5ActionPerformed(evt);
+            }
+        });
+
+        jLabel6.setFont(new java.awt.Font("Traditional Arabic", 1, 18)); // NOI18N
+        jLabel6.setForeground(new java.awt.Color(0, 0, 204));
+        jLabel6.setText("Statistics");
+
+        jButton8.setFont(new java.awt.Font("Traditional Arabic", 1, 14)); // NOI18N
+        jButton8.setForeground(new java.awt.Color(51, 0, 204));
+        jButton8.setText("Top 5 Ordered Dishes");
+        jButton8.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton8ActionPerformed(evt);
+            }
+        });
+
+        jLayeredPane2.setLayer(jButton4, javax.swing.JLayeredPane.DEFAULT_LAYER);
+        jLayeredPane2.setLayer(jButton3, javax.swing.JLayeredPane.DEFAULT_LAYER);
+        jLayeredPane2.setLayer(jButton5, javax.swing.JLayeredPane.DEFAULT_LAYER);
+        jLayeredPane2.setLayer(jLabel6, javax.swing.JLayeredPane.DEFAULT_LAYER);
+        jLayeredPane2.setLayer(jButton8, javax.swing.JLayeredPane.DEFAULT_LAYER);
+
+        javax.swing.GroupLayout jLayeredPane2Layout = new javax.swing.GroupLayout(jLayeredPane2);
+        jLayeredPane2.setLayout(jLayeredPane2Layout);
+        jLayeredPane2Layout.setHorizontalGroup(
+            jLayeredPane2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jLayeredPane2Layout.createSequentialGroup()
+                .addGroup(jLayeredPane2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jLayeredPane2Layout.createSequentialGroup()
+                        .addGap(99, 99, 99)
+                        .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 75, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(jLayeredPane2Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addGroup(jLayeredPane2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jButton8, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jButton4, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 259, Short.MAX_VALUE)
+                            .addComponent(jButton3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jButton5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                .addContainerGap())
+        );
+        jLayeredPane2Layout.setVerticalGroup(
+            jLayeredPane2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jLayeredPane2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(jButton3)
+                .addGap(18, 18, 18)
+                .addComponent(jButton5)
+                .addGap(18, 18, 18)
+                .addComponent(jButton8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+
+        jLayeredPane3.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED, new java.awt.Color(153, 153, 255), new java.awt.Color(153, 153, 255), new java.awt.Color(102, 102, 255), null));
+
+        jLabel5.setFont(new java.awt.Font("Traditional Arabic", 1, 14)); // NOI18N
+        jLabel5.setForeground(new java.awt.Color(0, 0, 204));
+        jLabel5.setText("Total Money Earned");
+
+        jTextField1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField1ActionPerformed(evt);
+            }
+        });
+
+        jLabel2.setFont(new java.awt.Font("Traditional Arabic", 1, 14)); // NOI18N
+        jLabel2.setForeground(new java.awt.Color(51, 0, 204));
+        jLabel2.setText("Total Including taxes");
+
+        jTextField3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField3ActionPerformed(evt);
+            }
+        });
+
+        jLayeredPane3.setLayer(jLabel5, javax.swing.JLayeredPane.DEFAULT_LAYER);
+        jLayeredPane3.setLayer(jTextField1, javax.swing.JLayeredPane.DEFAULT_LAYER);
+        jLayeredPane3.setLayer(jLabel2, javax.swing.JLayeredPane.DEFAULT_LAYER);
+        jLayeredPane3.setLayer(jTextField3, javax.swing.JLayeredPane.DEFAULT_LAYER);
+
+        javax.swing.GroupLayout jLayeredPane3Layout = new javax.swing.GroupLayout(jLayeredPane3);
+        jLayeredPane3.setLayout(jLayeredPane3Layout);
+        jLayeredPane3Layout.setHorizontalGroup(
+            jLayeredPane3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jLayeredPane3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jLayeredPane3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jLayeredPane3Layout.createSequentialGroup()
+                        .addComponent(jLabel5)
+                        .addGap(0, 131, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jLayeredPane3Layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jLayeredPane3Layout.createSequentialGroup()
+                        .addComponent(jLabel2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap())
+        );
+        jLayeredPane3Layout.setVerticalGroup(
+            jLayeredPane3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jLayeredPane3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jLayeredPane3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, 38, Short.MAX_VALUE)
+                    .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(42, 42, 42))
+        );
+
+        jLayeredPane4.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED, new java.awt.Color(153, 153, 255), new java.awt.Color(153, 153, 255), new java.awt.Color(102, 102, 255), null));
+
+        jButton1.setFont(new java.awt.Font("Segoe Print", 1, 14)); // NOI18N
+        jButton1.setForeground(new java.awt.Color(51, 0, 204));
+        jButton1.setText("Logout");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+
+        jLayeredPane4.setLayer(jButton1, javax.swing.JLayeredPane.DEFAULT_LAYER);
+
+        javax.swing.GroupLayout jLayeredPane4Layout = new javax.swing.GroupLayout(jLayeredPane4);
+        jLayeredPane4.setLayout(jLayeredPane4Layout);
+        jLayeredPane4Layout.setHorizontalGroup(
+            jLayeredPane4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jLayeredPane4Layout.createSequentialGroup()
+                .addGap(81, 81, 81)
+                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 109, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jLayeredPane4Layout.setVerticalGroup(
+            jLayeredPane4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jLayeredPane4Layout.createSequentialGroup()
+                .addGap(55, 55, 55)
+                .addComponent(jButton1)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(238, 238, 238)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 147, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(21, 21, 21)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLayeredPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLayeredPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(43, 43, 43)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jLayeredPane2)
+                            .addComponent(jLayeredPane4))))
+                .addContainerGap(48, Short.MAX_VALUE))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(18, 18, 18)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLayeredPane2)
+                    .addComponent(jLayeredPane1))
+                .addGap(15, 15, 15)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLayeredPane3)
+                    .addComponent(jLayeredPane4))
+                .addGap(50, 50, 50))
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField1ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        
+        
+        
+                    Login LForm;
+        try {
+            LForm = new Login();
+            LForm.setVisible(true);
+            this.setVisible(false);
+        } catch (JAXBException ex) {
+            Logger.getLogger(ManagerForm.class.getName()).log(Level.SEVERE, null, ex);
+        }
+                 
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+
+        DefaultPieDataset pieDataset = new DefaultPieDataset();
+        pieDataset.setValue("available tables", availableTablesCount);
+        pieDataset.setValue("reserved tables", reservedTablesCount);
+        JFreeChart chart = ChartFactory.createPieChart("Available and Reserved Tables", pieDataset, true, true, true);
+        PiePlot P = (PiePlot)chart.getPlot();
+        ChartFrame frame = new ChartFrame("Available and Reserved Tables",chart);
+        frame.setVisible(true);
+        frame.setSize(450,500);
+
+    }//GEN-LAST:event_jButton3ActionPerformed
+
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+        DefaultPieDataset pieDataset = new DefaultPieDataset();
+        pieDataset.setValue("smoking tables", smokingTables);
+        pieDataset.setValue("non smoking tables", nonsmokingTables);
+        JFreeChart chart = ChartFactory.createPieChart("Smoking and Nonsmoking Tables", pieDataset, true, true, true);
+        PiePlot P = (PiePlot)chart.getPlot();
+        ChartFrame frame = new ChartFrame("Smoking and Nonsmoking Tables",chart);
+        frame.setVisible(true);
+        frame.setSize(450,500);
+    }//GEN-LAST:event_jButton4ActionPerformed
+
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+     if(flag==0){   
+        for(int i=0;i<ordersList.size();i++){
+           for(int j=0;j<ordersList.get(i).getDishes().size();j++)
+             {
+                if("appetizer".equals(ordersList.get(i).getDishes().get(j).getType()))
+                  { 
+                     appetizerDishes = appetizerDishes + ordersList.get(i).getDishes().get(j).getQuantity();
+                  }
+                else if("main_course".equals(ordersList.get(i).getDishes().get(j).getType()))
+                 {
+                    mainCourseDishes = mainCourseDishes + ordersList.get(i).getDishes().get(j).getQuantity();
+                 }
+                else if("desert".equals(ordersList.get(i).getDishes().get(j).getType()))
+                 {
+                    dessertDishes = dessertDishes + ordersList.get(i).getDishes().get(j).getQuantity();
+                 }   
+             }
+        }
+        
+        DefaultPieDataset pieDataset = new DefaultPieDataset();
+        pieDataset.setValue("Appetizer", appetizerDishes);
+        pieDataset.setValue("Desert", dessertDishes);
+        pieDataset.setValue("Main Course", mainCourseDishes);
+        JFreeChart chart = ChartFactory.createPieChart("Dish Types", pieDataset, true, true, true);
+        PiePlot P = (PiePlot)chart.getPlot();
+        ChartFrame frame = new ChartFrame("Dish Types",chart);
+        frame.setVisible(true);
+        frame.setSize(450,500);}
+     else {JOptionPane.showMessageDialog(rootPane, "No orders available yet");}
+    }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // TODO add your handling code here:
+       if (flag==0){
+        ManagerReservations mReservations = new ManagerReservations(ordersList);
+                 mReservations.setVisible(true);}
+       else{
+       JOptionPane.showMessageDialog(rootPane, "No orders available yet");}
+    }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+        // TODO add your handling code here:
+        ManagerTablesDetails mTables = new ManagerTablesDetails(availableTables,reservedTables);
+        mTables.setVisible(true);
+    }//GEN-LAST:event_jButton6ActionPerformed
+
+    private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
+        // TODO add your handling code here:
+        ManagerStaff mStaff = new ManagerStaff(waitersList,cookersList);
+        mStaff.setVisible(true);
+    }//GEN-LAST:event_jButton7ActionPerformed
+
+    private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
+        // TODO add your handling code here:
+        if (flag ==0){
+        getTopOrderedDishesStatistics();
+      DefaultPieDataset pieDataset = new DefaultPieDataset();
+      String dishNameCount;
+        for (int i = 0;i<5;i++){
+          dishNameCount = topOrderedDishList.get(i).getDishName()+' '+String.valueOf(topOrderedDishList.get(i).getCount());  
+          pieDataset.setValue(dishNameCount,topOrderedDishList.get(i).getCount());
+        }
+        
+        JFreeChart chart = ChartFactory.createPieChart("Top 5 Ordered Dishes", pieDataset, true, true, true);
+        PiePlot P = (PiePlot)chart.getPlot();
+        ChartFrame frame = new ChartFrame("Top 5 Ordered Dishes",chart);
+        frame.setVisible(true);
+        frame.setSize(450,500);
+        }
+        else {JOptionPane.showMessageDialog(rootPane, "No orders available yet");}
+    }//GEN-LAST:event_jButton8ActionPerformed
+
+    private void jTextField3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField3ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField3ActionPerformed
+
+    /**
+     * @param args the command line arguments
+     */
+   
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton1;
+    private javax.swing.JButton jButton2;
+    private javax.swing.JButton jButton3;
+    private javax.swing.JButton jButton4;
+    private javax.swing.JButton jButton5;
+    private javax.swing.JButton jButton6;
+    private javax.swing.JButton jButton7;
+    private javax.swing.JButton jButton8;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLayeredPane jLayeredPane1;
+    private javax.swing.JLayeredPane jLayeredPane2;
+    private javax.swing.JLayeredPane jLayeredPane3;
+    private javax.swing.JLayeredPane jLayeredPane4;
+    private javax.swing.JList<String> jList1;
+    private javax.swing.JScrollPane jScrollPane4;
+    private javax.swing.JTextField jTextField1;
+    private javax.swing.JTextField jTextField3;
+    // End of variables declaration//GEN-END:variables
+}
